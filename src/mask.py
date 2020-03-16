@@ -1,5 +1,6 @@
 """
-Algorithms for simulating matrices that exhibit the same characteristics as Norwegian cervical cancer screening data.
+Algorithms for simulating observation masks that exhibit the same characteristics
+as the observation mask of Norwegian cervical cancer screening data.
 """
 
 import numpy as np
@@ -70,51 +71,67 @@ def sample_screenings(X, stepsize, proba_init_age=None, proba_dropout=None, miss
     return np.array(X_sparse)
 
 
-def simulate_mask(X_integer,
-                  mask_parameters,
-                  path_dropout=None,
-                  seed=42):
+def simulate_mask(
+    D,
+    screening_proba,
+    memory_length,
+    level,
+    path_dropout=None,
+    random_state=None,
+):
     """Simulation of a missing data mask.
+
     Parameters
     ----------
-    X_integer : The unmasked integer-valued matrix.
-    mask_parameters : 
-        mask_transition_expectations : E[p_ik] for k = 1, 2, ... Z
-        mask_transition_variances : Var[p_ik] for k = 1, 2, ... Z
-        memory_length : Determines how long each screening result is remembered.
-        mask_level : Affects the probability of coming in for a screening across all patients.
+    D : array of shape (n_samples, n_timesteps)
+        The unmasked integer-valued matrix.
+
+    screening_proba : array of shape (n_class_z + 1, )
+        The probabilities p(mask_ij = 1) determined by the last observation z
+        kept in memory.
+
+    memory_length : int
+        The number of timesteps a sample `remembers` the last observed entry. 
+
+    level : float
+        A parameter for tuning the overall sparsity of the resulting mask
+
+    path_to_dropout : str, default=None
+        Specifies path to file where dropout times should be sampled from.
+
+    random_state : int, default=None
+        For reproducibility.
+
     Returns
-    ----------
-    mask : The resulting mask.
+    -------
+    mask : array of shape (n_samples, n_timesteps)
+        The resulting mask.
     """
-    mask_screening_proba = mask_parameters['mask_screening_proba']
-    mask_memory_length = mask_parameters['memory_length']
-    mask_level = mask_parameters['mask_level']
+    N = D.shape[0]
+    T = D.shape[1]
 
-    N, T = np.shape(X_integer)
+    mask = np.zeros_like(D, dtype=np.bool)
+    observed_values = np.zeros((N, T))
 
-    mask = np.zeros_like(X_integer, dtype=np.bool)
-    observed_values = np.zeros_like(X_integer)
-
-    np.random.seed(seed)
+    if not(random_state is None):
+        np.random.seed(random_state)
 
     for t in range(T - 1):
-
-        # Find last remembered values.
+        # Find last remembered values
         last_remembered_values = observed_values[np.arange(
-            N), t + 1 - np.argmax(observed_values[:, t + 1:max(0, t - mask_memory_length):-1] != 0, axis=1)]
+            N), t+1-np.argmax(observed_values[:, t+1:max(0, t-memory_length):-1] != 0, axis=1)]
 
-        p = mask_level * mask_screening_proba[(last_remembered_values).astype(int)]
+        p = level*screening_proba[(last_remembered_values).astype(int)]
         r = np.random.uniform(size=N)
-        mask[r <= p, t + 1] = True
-        observed_values[r <= p, t+1] = X_integer[r <= p, t+1]
+        mask[r <= p, t+1] = True
+        observed_values[r <= p, t+1] = D[r <= p, t+1]
 
     # Simulate dropout
-    if path_dropout is not None:
+    if not(path_dropout is None):
         prob_dropout = np.load(path_dropout)
-        tpoints = np.arange(X_integer.shape[1])
+        tpoints = np.arange(D.shape[1])
 
-        for num in range(X_integer.shape[0]):
+        for num in range(D.shape[0]):
             t_max = np.random.choice(tpoints, p=prob_dropout, replace=True)
             mask[num, t_max:] = 0
 
