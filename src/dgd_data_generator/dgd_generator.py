@@ -5,9 +5,10 @@ Algorithms for simulating matrices that exhibit the same characteristics as Norw
 import numpy as np
 
 
-def simulate_float_from_named_basis(basis_name, N=38000, T=321, K=5, domain=[1, 4], seed=42):
+def simulate_float_from_named_basis(basis_name, N=38000, T=321, K=5, domain=[1, 4], random_state=42):
 
-    np.random.seed(seed)
+    if not(random_state is None):
+        np.random.seed(random_state)
 
     if basis_name == 'simple_peaks':
         V = np.empty(shape=(T, K))
@@ -35,18 +36,21 @@ def simulate_float_from_named_basis(basis_name, N=38000, T=321, K=5, domain=[1, 
 
     U = np.random.gamma(shape, scale, size=(N, K))
 
-    M_unscaled = U @ V.T
+    M_unscaled = U@V.T
 
-    M = domain[0] + (M_unscaled - np.min(M_unscaled)) / (np.max(M_unscaled) - np.min(M_unscaled)) * (domain[1] - domain[0])
+    M = domain[0] + (M_unscaled - np.min(M_unscaled))/(np.max(M_unscaled) - np.min(M_unscaled))*(domain[1] - domain[0])
 
     return M
 
 
-def simulate_integer_from_float(X_float_unscaled,
-                                integer_parameters,
-                                return_float=False,
-                                seed=None):
+def simulate_integer_from_float(
+    X_float_unscaled,
+    integer_parameters,
+    return_float=False,
+    random_state=None
+):
     """Simulation of integer data from floats.
+
     Parameters
     ----------
     X_float_unscaled       : Scores.
@@ -55,6 +59,7 @@ def simulate_integer_from_float(X_float_unscaled,
         kernel_parameter : Parameter used in the pmf.
     return_float : Return input.
     seed         : Replication of results.
+
     Returns
     ----------
     res : Simulated integer X_float_unscaled 
@@ -62,7 +67,8 @@ def simulate_integer_from_float(X_float_unscaled,
     output_domain = integer_parameters['output_domain']
     kernel_parameter = integer_parameters['kernel_parameter']
 
-    np.random.seed(seed)
+    if not(random_state is None):
+        np.random.seed(random_state)
 
     domain_max = np.max(output_domain)
     domain_min = np.min(output_domain)
