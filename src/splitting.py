@@ -2,10 +2,11 @@ from typing import Tuple
 import numpy as np
 
 
-def train_val_split(X,
-                    prediction_window,
-                    method='last_observed',
-                    seed=42) -> Tuple:
+def train_val_split(X: np.ndarray,
+                    prediction_window: int,
+                    method: str = 'last_observed',
+                    return_valid_rows: bool = True,
+                    seed: int = 42) -> Tuple:
         """Divide sapmles into training and validation sets.
 
         Args:
@@ -35,13 +36,12 @@ def train_val_split(X,
 
             val_columns = max(0, t_max - prediction_window)
 
-            O_val[i, val_columns:] = 0
-            O_train[i, :val_columns] = 0
-
-        # Retain only rows that still contain observations
-        valid_rows = np.sum(O_train, axis=1) > 0
-
-        O_val = O_val[valid_rows, :]
-        O_train = O_train[valid_rows, :]
-
+            O_train[i, val_columns:] = 0
+            O_val[i, :val_columns] = 0
+        
+        if return_valid_rows:
+            valid_rows = np.logical_and(np.sum(O_train > 0, axis=1), np.sum(O_val > 0, axis=1))
+            
+            return O_train, O_val, valid_rows
+        
         return O_train, O_val
