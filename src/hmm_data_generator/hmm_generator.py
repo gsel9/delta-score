@@ -12,6 +12,7 @@ from .transition import next_state, inital_state
 from .sojourn import sojourn_time 
 
 
+# TODO: Randomly sample init_age and age_max with empirical probabilities.
 def simulate_profile(n_timepoints, init_age, age_max, missing=0) -> np.ndarray:
     """Update the profile vector of a single female. 
 
@@ -34,8 +35,8 @@ def simulate_profile(n_timepoints, init_age, age_max, missing=0) -> np.ndarray:
     # Counters. 
     start_period = init_age
     end_period = 0
-    num_iter = 0
 
+    _iter = 0
     while current_age < age_max:
 
         # Time spent in current state.
@@ -53,8 +54,8 @@ def simulate_profile(n_timepoints, init_age, age_max, missing=0) -> np.ndarray:
         current_state = next_state(age=current_age, current_state=current_state, censoring=0)
 
         # To avoid endless loop.
-        num_iter += 1
-        if num_iter > len(x):
+        _iter += 1
+        if _iter > n_timepoints:
             raise RuntimeError('Endless loop. Check config!')
 
     return x
