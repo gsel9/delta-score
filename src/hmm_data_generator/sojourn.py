@@ -75,7 +75,7 @@ def eval_sojourn_time(n: int, age: int, current_state: int, t: int) -> float:
     return 1.0 - np.exp(sum(kappas))
 
 
-# NB: CDF does not accumulate to 1.
+# QUESTION: Should accumulate to 1?
 def sojourn_time_cdf(start_age, stop_age, current_state) -> np.ndarray:
     """Compute the sojourn time CDF for a given female.
     

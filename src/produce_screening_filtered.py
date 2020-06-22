@@ -74,8 +74,8 @@ def main():
 	data_summary(X_train_filtered)
 	data_summary(X_test_filtered)
 
-	#np.save("/Users/sela/Desktop/recsys_paper/data/screening_filtered/train/X_train.npy", X_train_filtered)
-	#np.save("/Users/sela/Desktop/recsys_paper/data/screening_filtered/test/X_test.npy", X_test_filtered)
+	np.save("/Users/sela/Desktop/recsys_paper/data/screening_filtered/train/X_train.npy", X_train_filtered)
+	np.save("/Users/sela/Desktop/recsys_paper/data/screening_filtered/test/X_test.npy", X_test_filtered)
 
 
 if __name__ == "__main__":

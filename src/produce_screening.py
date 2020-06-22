@@ -20,8 +20,8 @@ def main():
 	data_summary(X_train)
 	data_summary(X_test)
 
-	#np.save("/Users/sela/Desktop/recsys_paper/data/screening/train/X_train.npy", X_train)
-	#np.save("/Users/sela/Desktop/recsys_paper/data/screening/test/X_test.npy", X_test)
+	np.save("/Users/sela/Desktop/recsys_paper/data/screening/train/X_train.npy", X_train)
+	np.save("/Users/sela/Desktop/recsys_paper/data/screening/test/X_test.npy", X_test)
 
 
 if __name__ == "__main__":

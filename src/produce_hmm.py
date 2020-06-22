@@ -95,7 +95,38 @@ def main():
 
 		np.save(f'{path_to_data}/test/X_test.npy', X_test)
 		np.save(f'{path_to_data}/test/M_test.npy', M_test)
-		
+
+
+def hmm_sample_demo():
+	"""
+	How to produce synthetic HMM data. 
+	"""
+
+	from tqdm import tqdm
+	from hmm_data_generator.hmm_generator import simulate_profile
+
+	# HACK: Should also to specify n_timepoints in src/utils.py.
+	n_timepoints = 321
+
+	# Number of screening histories/females/samples.
+	n_samples = 5
+
+	np.random.seed(SEED)
+
+	D = []
+	for num in range(n_samples):
+
+		# Simulate a synth screening profile.
+		d = simulate_profile(n_timepoints, init_age=0, age_max=321)
+
+		if sum(d) == 0:
+		    continue
+
+		D.append(d)
+
+	#np.save(f"{PATH_TO_DATA}/base_set_300K.npy", np.array(D))
+
 
 if __name__ == "__main__":
-	main()
+	#main()
+	hmm_sample_demo()

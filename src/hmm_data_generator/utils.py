@@ -5,7 +5,6 @@ Key:
     H2 = 3
     C3 = 4
     D5 = 5
-NB: Round-off errors from truncation of transition intensities/probabilities.
 """
 
 import numpy as np

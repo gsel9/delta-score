@@ -16,10 +16,6 @@ from .sojourn import sojourn_time
 def simulate_profile(n_timepoints, init_age, age_max, missing=0) -> np.ndarray:
     """Update the profile vector of a single female. 
 
-    Args:
-        init_age: Age at first screening.
-        age_max: Age at final screening.
-
     Returns:
         Simulated screening history for one single female.
     """
@@ -52,11 +48,10 @@ def simulate_profile(n_timepoints, init_age, age_max, missing=0) -> np.ndarray:
 
         # Update profile values with current state.
         current_state = next_state(age=current_age, current_state=current_state, censoring=0)
-
+        print("AGE", current_age)
         # To avoid endless loop.
         _iter += 1
         if _iter > n_timepoints:
             raise RuntimeError('Endless loop. Check config!')
 
     return x
-    
