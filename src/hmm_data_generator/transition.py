@@ -5,54 +5,45 @@ from typing import List, Union
 
 import numpy as np
 
-from .utils import age_group_idx, lambda_sr, p_init_state
+# TEMP: Add . before imports!
+from utils import age_group_idx, lambda_sr, p_init_state
 
 
 def inital_state(init_age: int) -> int:
     """Sample the state at first screening."""
     
-    age_grp = age_group_idx(init_age)
-
-    return np.random.choice([1, 2, 3, 4], p=p_init_state[age_grp])       
+    return np.random.choice([1, 2, 3, 4], p=p_init_state[age_group_idx(init_age)])       
 
 
-def legal_transitions(current_state: int, lambdas: List, norm: bool = False) -> np.ndarray:
-    """Extract transition intensities for the enabled state shifts given the 
-    current state.  
+# QUESTION: How is treatment given by transition intensities???
+def legal_transitions(current_state: int, age_group_idx: int) -> np.ndarray:
+    """Filter intensities for shifts from the current state."""
 
-    Args:
-        current_state:
-        lambdas: Transition intensities for a given age group.
-        norm: Scale transition intensities to sum to one.
-
-    Returns:
-        Transition intensities relevant for the current state.
-    """
+    # Transition intensities for the given age group.
+    lambdas = lambda_sr[age_group_idx]
     
     # Censoring.
     if current_state == 0:
-        return
-    
-    # s1 -> s2 or s1 -> censoring.
+        return [0]
+
+    # N0 -> L1/D4.
     if current_state == 1:
-        l_sr = [lambdas[0], lambdas[5]]
+        return [lambdas[0], lambdas[5]]
     
-    # s2 -> s3 or s2 -> s1 or -> censoring.
+    # L1 -> N0/H2/D4.
     if current_state == 2:
-        l_sr = [lambdas[1], lambdas[3], lambdas[6]]
-    
-    # s3 -> s4 or s3 -> s2 or -> censoring.
+        return [lambdas[3], lambdas[1], lambdas[6]]
+
+    # H2 -> N0/C3/D4
     if current_state == 3:
-        l_sr = [lambdas[2], lambdas[4], lambdas[7]]
+        return [lambdas[4], lambdas[2], lambdas[7]]
 
-    # s4 -> s1 or s4 -> censoring.
+    # C3 -> D4
     if current_state == 4:
-        l_sr = [1 - lambdas[8], lambdas[8]]
+        return [lambdas[8]]
 
-    if not norm:
-        return np.array(l_sr)
-
-    return np.array(l_sr) / sum(l_sr)
+    # Normalise into proabilities.
+    #return np.array(l_sr) / sum(l_sr)
 
 
 def next_state(age: int, current_state: int, censoring: int = 0) -> int:
