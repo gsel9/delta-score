@@ -48,35 +48,33 @@ def kappa(age, current_state, t, m) -> float:
     return kappa_m(age, current_state, m)
 
 
-def sojourn_time_cdf(age, t_lapse, s) -> np.ndarray:
+def sojourn_time_cdf(age, age_max, s) -> np.ndarray:
     """Compute the sojourn time CDF for a given female.
     
     Args:
         age: Start age.
-        dt: ???
+        age_max: End of time scale.
         s: Current state.
     
     Returns:
-        Sojourn time cdf over [age, age + dt].
+        Sojourn time CDF over [age, age_max].
     """
+
+    time_lapse = int(age_max - age)
 
     k = age_group_idx(age)
 
-    dt = int(t_lapse - age)
+    cdf = []
+    for t in range(time_lapse):
 
-    cdf = np.zeros(dt + 1, dtype=np.float32)
-    for i, t in enumerate(range(dt)):
+        # NOTE: Shift by 1 gave more sane (mono increasing) CDF curves.
+        n = age_group_idx(age + t) - k + 1
 
-        t = t + age
-
-        n = age_group_idx(age + t) - k
-
-        cdf[i + 1] = 1.0 - np.exp(sum([kappa(age, s, t, i) for i in range(n)]))
-
-    return cdf
+        cdf.append(1.0 - np.exp(sum([kappa(age, s, t, i) for i in range(n)])))
+    
+    return np.array(cdf)
 
 
-# TODO: Try tau_l - age and tau_l in sum_kappa formula.
 def sojourn_time(age: int, age_max: int, s: int) -> float:
     """Estimate the time that will spent in a given state.
     Args:
@@ -88,50 +86,48 @@ def sojourn_time(age: int, age_max: int, s: int) -> float:
         The amount of time a female spends in the current state.
     """
     
-    # Censor the rest of the profile.
-    #if current_state == 0:
-    #    return age_max
+    # Female is censored.
+    if s == 0:
+        return age_max
 
     # Corollary 1: step 1
-    u = np.random.uniform(low=0, high=1.0)
+    u = np.random.uniform()
 
     # Step 2
     k = age_group_idx(age)
 
-    # Step 3
+    # Step 3: i) Solve min(t): u <= P(T < t).
     cdf = sojourn_time_cdf(age, age_max, s)
+    t = np.argmax(u <= cdf) #+ age # Drop age
 
-    # a) First time point after intersection between CDF and u, ie min(t): P(T < t) >= u.
-    t_hat = np.argmax(cdf >= u)
-
-    # b) Map t_hat to a time partition interval l: t_hat in [tau_l - a, tau_lp - a] => 
-    #    t_hat + a in [tau_l, tau_lp].
-    l = age_group_idx(t_hat + age)
-
+    # Step3: ii) Solve l: t in [tau_l, tau_lp].
+    l = age_group_idx(t)
     tau_l, _ = age_partitions[l]
 
-    # See proof of Corollary 1 for formula.
+    # Step 4
     sum_kappa = sum([kappa(age, s, tau_l - age, i) for i in range(1, l - k)])
 
-    # Step 4
     return (sum_kappa - np.log(1 - u)) / sum(legal_transitions(s, l))
 
 
 if __name__ == '__main__':
-
-    # NB: Need to use `normalised` age.
-
+    """
     import matplotlib.pyplot as plt
 
-    cdf = sojourn_time_cdf(16, 96, 2)
-    #cdf = sojourn_time_cdf(1, 80, 2)
-    print(cdf)
+    cdf1 = sojourn_time_cdf(16, 96, 2)
+    cdf2 = sojourn_time_cdf(50, 96, 2)
 
-    plt.figure()
-    plt.plot(cdf)
+    print(cdf1)
+    print(cdf2)
+
+    _, axes = plt.subplots(ncols=2, figsize=(15, 5))
+    axes[0].plot(cdf1)
+    axes[1].plot(cdf2)
     plt.show()
+    """
 
-    #for a in np.linspace(16, 96, 5, int):
-    #    for b in np.linspace(a, 96, 5):
-    #        print(sojourn_time(a, b, 1))
-
+    # Should be shorter for higher current states.
+    print(sojourn_time(20, 70, 1))
+    print(sojourn_time(20, 70, 2))
+    print(sojourn_time(20, 70, 3))
+    print(sojourn_time(20, 70, 4))

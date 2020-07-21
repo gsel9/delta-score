@@ -22,39 +22,27 @@ def simulate_profile(n_timepoints, missing=0) -> np.ndarray:
     """
 
     # TEMP: init_age and age_max from analytical distributions. 
-    init_age = 16
-    age_max = 96
+    init_age = 0
+    age_max = 80
+    current_age = init_age
 
     x = np.ones(int(n_timepoints)) * missing
 
     # Initial state.
     current_state = inital_state(init_age=init_age)
 
-    # TODO: How time grid should be defined.
-    taus = np.linspace(init_age, age_max, n_timepoints)
-    taus = np.insert(taus, 0, 0)
-    ###
-    
-    # Track age development.
-    current_age = init_age
-
-    # Counters. 
-    t_start = init_age
-    t_end = 0
-
     _iter = 0
     while current_age < age_max:
 
-        # When female leaves the current state.
-        t_exit = sojourn_time(current_age, age_max, current_state)
+        t_exit = int(sojourn_time(current_age, age_max, current_state))
 
-        current_age = current_age + t_exit
+        t_end = current_age + t_exit
+
+        x[current_age:t_end] = current_state
+
         current_state = next_state(current_age, current_state)
 
-        t_start = 
-        t_end = 
-
-        x[t_start:t_end] = current_state
+        current_age = t_end
 
         # To avoid endless loop.
         _iter += 1
@@ -72,10 +60,10 @@ if __name__ == "__main__":
     # * Sample time for first screening analytically by fitting a distribution to empirical data.
     # * Update inital state probas and transit intensities. 
 
-    n_timepoints = 340
+    n_timepoints = 80
 
     # Number of screening histories/females/samples.
-    n_samples = 2
+    n_samples = 100
 
     np.random.seed(42)
 
@@ -84,10 +72,14 @@ if __name__ == "__main__":
 
         # Simulate a synth screening profile.
         d = simulate_profile(n_timepoints)
+        
+        if sum(d) == 0:
+            continue
 
-        #if sum(d) == 0:
-        #    continue
+        D.append(d)
 
-        #D.append(d)
+    D = np.array(D)
+    print(D)
 
-    #print(D)
+    v, c = np.unique(D[D != 0], return_counts=True)
+    print(v, c, c / sum(c))

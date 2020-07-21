@@ -46,18 +46,12 @@ def legal_transitions(current_state: int, age_group_idx: int) -> np.ndarray:
 
 
 def next_state(age_exit: int, current_state: int, censoring: int = 0) -> int:
-    """Simulate the next state from sojourn time conditions.
-
-    Args:
-        age:
-        current_state: 
-        censoring: Representation of censoring.
-
-    Returns:
-        The next state.
-    """
+    """Returns next female state."""
 
     lambdas = legal_transitions(current_state, age_group_idx(age_exit))
+
+    if len(lambdas) == 1:
+        return censoring
 
     p = np.array(lambdas) / sum(lambdas)
 
@@ -74,9 +68,6 @@ def next_state(age_exit: int, current_state: int, censoring: int = 0) -> int:
         return np.random.choice((2, 4, censoring), p=p)
     
     # C3 -> D4
-    if current_state == 4:
-        return np.random.choice((censoring), p=p)
-
     return censoring
 
 
