@@ -33,7 +33,7 @@ def legal_transitions(current_state: int, age_group_idx: int) -> np.ndarray:
     if current_state == 2:
         return [lambdas[3], lambdas[1], lambdas[6]]
 
-    # H2 -> N0/C3/D4
+    # H2 -> H2/C3/D4
     if current_state == 3:
         return [lambdas[4], lambdas[2], lambdas[7]]
 
@@ -63,7 +63,7 @@ def next_state(age_exit: int, current_state: int, censoring: int = 0) -> int:
     if current_state == 2:
         return np.random.choice((1, 3, censoring), p=p)
     
-    # H2 -> N0/C3/D4
+    # H2 -> L1/C3/D4
     if current_state == 3:
         return np.random.choice((2, 4, censoring), p=p)
     

@@ -60,14 +60,14 @@ def sojourn_time_cdf(age, age_max, s) -> np.ndarray:
         Sojourn time CDF over [age, age_max].
     """
 
-    time_lapse = int(age_max - age)
+    time_lapse = int(age_max - age) + 1
 
     k = age_group_idx(age)
 
     cdf = []
-    for t in range(time_lapse):
+    for t in range(1, time_lapse):
 
-        # NOTE: Shift by 1 gave more sane (mono increasing) CDF curves.
+        # NOTE: Adjust to Python count logic (range() terminates at n - 1).
         n = age_group_idx(age + t) - k + 1
 
         cdf.append(1.0 - np.exp(sum([kappa(age, s, t, i) for i in range(n)])))
@@ -90,31 +90,38 @@ def sojourn_time(age: int, age_max: int, s: int) -> float:
     if s == 0:
         return age_max
 
+    # Too close to state vector completion.
+    if age_max - age < 2:
+        return age_max
+
     # Corollary 1: step 1
     u = np.random.uniform()
 
     # Step 2
     k = age_group_idx(age)
 
-    # Step 3: i) Solve min(t): u <= P(T < t).
+    # Step 3: 
     cdf = sojourn_time_cdf(age, age_max, s)
-    t = np.argmax(u <= cdf) #+ age # Drop age
 
-    # Step3: ii) Solve l: t in [tau_l, tau_lp].
-    l = age_group_idx(t)
+    # Solve t: P(T < t) approx u where t is relative to age.
+    t = np.argmax(u < cdf)
+
+    # Exceeds CDF domain.
+    if t == 0:
+        t = age_max
+
+    # Seek l: P(T < tau_l - a) < u < P(T < tau_lp - a).
+    # If t: P(T < t) approx u => t in [tau_l - a, tau_lp - a) <=> t + a in [tau_l, tau_lp).
+    l = age_group_idx(t + age)
     tau_l, _ = age_partitions[l]
 
-    # import matplotlib.pyplot as plt 
-    # plt.figure()
-    # plt.plot(cdf)
-    # plt.axhline(y=u, label="u", c="green")
-    # plt.axvline(x=t, label="t", c="green")
-    # plt.axvline(x=tau_l, label="lb", c="maroon")
-    # plt.legend()
-    # plt.show()
+    # Sanity check.
+    #assert tau_l - age < t and age < tau_lp - age
 
     # Step 4
-    sum_kappa = sum([kappa(age, s, tau_l - age, i) for i in range(1, l - k)])
+    n = age_group_idx(tau_l - age) - k + 1
+
+    sum_kappa = sum([kappa(age, s, tau_l - age, i) for i in range(1, n)])
 
     return (sum_kappa - np.log(1 - u)) / sum(legal_transitions(s, l))
 

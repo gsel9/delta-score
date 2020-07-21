@@ -11,10 +11,7 @@ import numpy as np
 import pandas as pd
 
 
-NUM_TIMEPOINTS = 321
-
-# NOTE: Should be (a, n] = tuple(a, b - 1)???
-age_groups = np.array([
+age_partitions = np.array([
     (16, 19),  
     (20, 24),
     (25, 29),
@@ -26,7 +23,6 @@ age_groups = np.array([
 ])
 
 #age_partitions = ((age_groups - np.min(age_groups)) / np.max(age_groups)) * NUM_TIMEPOINTS 
-age_partitions = age_groups
 
 # Transition intensities (age group x state transition).
 # TODO: Add confidence bounds and do a random sampling from this range.
