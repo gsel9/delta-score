@@ -104,6 +104,15 @@ def sojourn_time(age: int, age_max: int, s: int) -> float:
     l = age_group_idx(t)
     tau_l, _ = age_partitions[l]
 
+    # import matplotlib.pyplot as plt 
+    # plt.figure()
+    # plt.plot(cdf)
+    # plt.axhline(y=u, label="u", c="green")
+    # plt.axvline(x=t, label="t", c="green")
+    # plt.axvline(x=tau_l, label="lb", c="maroon")
+    # plt.legend()
+    # plt.show()
+
     # Step 4
     sum_kappa = sum([kappa(age, s, tau_l - age, i) for i in range(1, l - k)])
 

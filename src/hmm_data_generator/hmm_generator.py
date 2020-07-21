@@ -83,3 +83,19 @@ if __name__ == "__main__":
 
     v, c = np.unique(D[D != 0], return_counts=True)
     print(v, c, c / sum(c))
+
+    import matplotlib.pyplot as plt 
+    plt.figure()
+    plt.imshow(D, aspect="auto")
+    plt.show()
+
+    idx = np.squeeze(np.where(np.max(D, axis=1) > 1))
+
+    _, axes = plt.subplots(nrows=6, ncols=2, figsize=(15, 15))
+    for i, axis in enumerate(axes.ravel()):
+
+        x = D[idx[i], :]
+        x[x == 0] = np.nan
+        axis.plot(x, "o")
+    plt.show()
+
