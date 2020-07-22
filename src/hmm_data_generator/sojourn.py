@@ -65,9 +65,9 @@ def sojourn_time_cdf(age, age_max, s) -> np.ndarray:
     """
 
     k = age_group_idx(age)
-    time_lapse = int(age_max - age)
+    time_lapse = int(age_max - age) + 1
     
-    cdf = np.zeros(time_lapse)
+    cdf = np.zeros(time_lapse + 1)
     cdf[-1] = 1
 
     for t in range(1, time_lapse):
@@ -120,19 +120,19 @@ def sojourn_time(age: int, age_max: int, s: int) -> float:
     l = age_group_idx(t + age)
     tau_l, tau_lp = age_partitions[l] 
 
-    import matplotlib.pyplot as plt 
-    plt.figure()
-    plt.plot(cdf)
-    plt.show()
-    # plt.axvline(x=t, label=f"t: {t}", c="yellow")
-    # plt.axvline(x=t + age, label=f"t + a = {t} + {age}", c="orange", linewidth=10)
-    # plt.axvline(x=tau_l, label=f"tau_l: {tau_l}", c="maroon")
-    # plt.axvline(x=tau_lp, label=f"tau_lp: {tau_lp}", c="maroon")
+    # import matplotlib.pyplot as plt 
+    # plt.figure()
+    # plt.plot(cdf)
     # plt.axhline(y=u, label="u", c="green")
+    # plt.axvline(x=t, label=f"t: {t}", c="yellow")
+    # plt.axvline(x=tau_l - age, label=f"tau_l - a: {tau_l - age}", c="maroon")
+    # plt.axvline(x=tau_lp - age, label=f"tau_lp - a: {tau_lp - age}", c="maroon")
+    
     # plt.legend()
+    # plt.show()
 
-    # Sanity check.
-    #assert tau_l - age < t and age < tau_lp - age
+    # # Sanity check.
+    assert tau_l - age <= t and t < tau_lp - age
 
     # Step 4
     n = age_group_idx(tau_l - age) - k + 1

@@ -118,11 +118,11 @@ if __name__ == "__main__":
     plt.imshow(D, aspect="auto")
     plt.show()
 
-    idx = np.squeeze(np.where(np.max(D, axis=1) > 1))
-    _, axes = plt.subplots(nrows=6, ncols=2, figsize=(15, 15))
-    for i, axis in enumerate(axes.ravel()):
+    # idx = np.squeeze(np.where(np.max(D, axis=1) > 1))
+    # _, axes = plt.subplots(nrows=6, ncols=2, figsize=(15, 15))
+    # for i, axis in enumerate(axes.ravel()):
 
-        x = D[idx[i], :]
-        x[x == 0] = np.nan
-        axis.plot(x, "o")
-    plt.show()
+    #     x = D[idx[i], :]
+    #     x[x == 0] = np.nan
+    #     axis.plot(x, "o")
+    # plt.show()
