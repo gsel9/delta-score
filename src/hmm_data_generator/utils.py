@@ -2,26 +2,27 @@ import numpy as np
 
 
 age_partitions = np.array([
-    (16, 19),  
-    (20, 24),
-    (25, 29),
-    (30, 34), 
-    (35, 39), 
-    (40, 49), 
-    (50, 59), 
-    (60, 120)
+    (0, 20),  
+    (20, 25),
+    (25, 30),
+    (30, 35), 
+    (35, 40), 
+    (40, 50), 
+    (50, 60), 
+    (60, 200)
 ])
 
 
 # Initial state probabilities (age group x probability initial state).
+# NOTE: Adjusted probas to will sum to 1.
 p_init_state = np.array(
     [   
         [0.93020, 0.06693, 0.00263, 0.00024],
         [0.92937, 0.06228, 0.00821, 0.00014],
         [0.93384, 0.04945, 0.01654, 0.00017],
-        [0.94875, 0.03574, 0.01528, 0.00023],
+        [0.94875, 0.03574, 0.01527, 0.00024],
         [0.95348, 0.03226, 0.01400, 0.00026],
-        [0.95543, 0.03309, 0.01132, 0.00016],
+        [0.95544, 0.03309, 0.01131, 0.00016],
         [0.96316, 0.02806, 0.00847, 0.00031],
         [0.96032, 0.02793 ,0.01134, 0.00041]
     ]
@@ -44,12 +45,12 @@ lambda_sr = np.array(
 )
 
 
-def age_group_idx(age: int) -> int:
+def age_group_idx(age: int, debug=False) -> int:
     """Returns index i: tau_i <= age < tau_i+1."""
 
-    for num, (tau_p, tau_pp) in enumerate(age_partitions):
+    for num, (min_bound, max_bound) in enumerate(age_partitions):
 
-        if age <= tau_p and age < tau_pp:
+        if min_bound <= age and age < max_bound:
             return num
     
     # NOTE: Assing last patition index to age exceeding the time interval.

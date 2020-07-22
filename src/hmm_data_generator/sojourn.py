@@ -8,37 +8,41 @@ from transition import legal_transitions
 
 
 def kappa_0(age, current_state, t) -> float:
-    # NOTE: `age` is running female age and not age at first screening.
 
-    return -1.0 * t * sum(legal_transitions(current_state, age_group_idx(age + t)))
+    l = age_group_idx(age + t)
+
+    s_l = sum(legal_transitions(current_state, l))
+
+    return -1.0 * t * s_l
 
 
 def kappa_1(age, current_state, t) -> float:
-    # NOTE: `tau` is normalised time grid.
 
     k = age_group_idx(age)
-    l = age_group_idx(age + t)
-
-    tau_l, _ = age_partitions[l]
     _, tau_kp = age_partitions[k]
 
-    s_k = sum(legal_transitions(current_state, k))    
-    s_l = sum(legal_transitions(current_state, l))
+    l = age_group_idx(age + t)
+    tau_l, _ = age_partitions[l]
 
-    return -1.0 * (tau_kp - age) * s_k - (age - tau_l) * s_l
+    s_k = (tau_kp - age) * sum(legal_transitions(current_state, k))    
+    s_l = (age - tau_l) * sum(legal_transitions(current_state, l))
     
+    return (-1.0 * s_k) - s_l
+
 
 def kappa_m(age, current_state, m) -> float:
     
     k = age_group_idx(age)
 
-    tau_k, tau_kp = age_partitions[k + m]
+    tau_km, tau_kmp = age_partitions[k + m - 1]
 
-    return -1.0 * (tau_kp - tau_k) * sum(legal_transitions(current_state, k + m - 1))
+    s_km = (tau_kmp - tau_km) * sum(legal_transitions(current_state, k + m - 1))
+
+    return -1.0 * s_km
 
 
 def kappa(age, current_state, t, m) -> float:
-    
+
     if m == 0:
         return kappa_0(age, current_state, t)
     
@@ -60,18 +64,19 @@ def sojourn_time_cdf(age, age_max, s) -> np.ndarray:
         Sojourn time CDF over [age, age_max].
     """
 
-    time_lapse = int(age_max - age) + 1
-
     k = age_group_idx(age)
+    time_lapse = int(age_max - age)
+    
+    cdf = np.zeros(time_lapse)
+    cdf[-1] = 1
 
-    cdf = []
     for t in range(1, time_lapse):
 
         # NOTE: Adjust to Python count logic (range() terminates at n - 1).
         n = age_group_idx(age + t) - k + 1
 
-        cdf.append(1.0 - np.exp(sum([kappa(age, s, t, i) for i in range(n)])))
-    
+        cdf[t] = 1.0 - np.exp(sum([kappa(age, s, t, i) for i in range(n)]))
+
     return np.array(cdf)
 
 
@@ -90,8 +95,8 @@ def sojourn_time(age: int, age_max: int, s: int) -> float:
     if s == 0:
         return age_max
 
-    # Too close to state vector completion.
-    if age_max - age < 2:
+    # Need t > 0.
+    if age_max - age < 1:
         return age_max
 
     # Corollary 1: step 1
@@ -113,7 +118,18 @@ def sojourn_time(age: int, age_max: int, s: int) -> float:
     # Seek l: P(T < tau_l - a) < u < P(T < tau_lp - a).
     # If t: P(T < t) approx u => t in [tau_l - a, tau_lp - a) <=> t + a in [tau_l, tau_lp).
     l = age_group_idx(t + age)
-    tau_l, _ = age_partitions[l]
+    tau_l, tau_lp = age_partitions[l] 
+
+    import matplotlib.pyplot as plt 
+    plt.figure()
+    plt.plot(cdf)
+    plt.show()
+    # plt.axvline(x=t, label=f"t: {t}", c="yellow")
+    # plt.axvline(x=t + age, label=f"t + a = {t} + {age}", c="orange", linewidth=10)
+    # plt.axvline(x=tau_l, label=f"tau_l: {tau_l}", c="maroon")
+    # plt.axvline(x=tau_lp, label=f"tau_lp: {tau_lp}", c="maroon")
+    # plt.axhline(y=u, label="u", c="green")
+    # plt.legend()
 
     # Sanity check.
     #assert tau_l - age < t and age < tau_lp - age
