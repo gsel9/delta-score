@@ -1,122 +1,128 @@
-"""
-"""
-
-from typing import Union, List
-
 from tqdm import tqdm
 
 import numpy as np
-import matplotlib.pyplot as plt
+import scipy.stats as st
 
-from scipy.stats import betabinom
+import matplotlib.pyplot as plt
 
 # TEMP: Add . before imports!
 from transition import next_state, inital_state
-from sojourn import sojourn_time 
+from sojourn import sojourn_time
 
 
-# TODO: 
-# * Add config module with constants.
-# * Extend time grid to arbitrary number of datapoints.
-def simulate_profile(n_timepoints: int, missing=0) -> np.ndarray:
-    """Update the profile vector of a single female. 
+# TEMP: Should compare discret distributions.
+def sample_init_censoring_times(n_samples):
+    """Sample times for init and final screenings."""
 
-    Returns:
-        Simulated screening history for one single female.
+    print(f"Sampling {n_samples} time points.")
+
+    t_start = st.exponnorm.rvs(K=8.76, loc=9.80, scale=7.07, size=n_samples)
+    t_start = t_start.astype(int)
+
+    t_cens = st.exponweib.rvs(a=513.28, c=4.02, loc=-992.87, scale=707.63, size=n_samples)
+    t_cens = t_cens.astype(int)
+
+    # NB: Make sure t_end > t_start for all females.
+    i = t_start < t_cens
+    t_cens = t_cens[i]
+    t_start = t_start[i]
+
+    print(f"Kept {sum(i)} time points.")
+
+    # Sanity checks
+    assert len(t_start) == len(t_cens)
+
+    assert np.all(t_start < t_cens)
+
+    return t_start, t_cens
+
+
+def simulate_profile(age, age_max, n_timepoints: int, missing=0) -> np.ndarray:
+    """Returns a simulated screening history for one single female.
     """
 
-    age = 16 # randomly sample
-    age_max = 96 # randomly sample betabinom(1, )
+    # NOTE:
+    # * age, t_exit are defined on grid [t_start, t_end].
+    # * period_start, period_end are defined on grid [0, n_timepoints].
 
-    t_grid = np.linspace(age, age_max, n_timepoints)
+    age_min = age
 
     x = np.ones(n_timepoints) * missing
+    t_grid = np.linspace(age, age_max, n_timepoints)
     
     state = inital_state(init_age=age)
 
-    # NOTE: 
-    # * age, t_exit are defined on grid [16, 96].
-    # * a, b are defined on grid [0, n_timepoints].
-
-    i, a, b = 0, 0, 0
+    i, period_start, period_end = 0, 0, 0
     while age < age_max:
 
         # Exit time from current state.
         t_exit = int(sojourn_time(age, age_max, state))
 
-        #b = np.argmax(np.cumsum(t_exit + age <= t_grid))
-        b = t_exit + age
-
-        # Number of timepoints to cover in state vector.
-        #if t_exit >= age_max:
-        #    b = age_max
-
-        #else:
-        #    b = np.argmax(np.cumsum(t_exit - age < t_grid))
-
-        x[a:b] = state
-
-        # Update age.
         age = age + t_exit
 
-        # Update state.
+        # Scale to number of timepoints to cover in state vector.
+        period_end = int(round(age / (age_max - age_min) * n_timepoints))
+
+        # Update state vector.
+        x[period_start:period_end] = state            
+
+        # To avoid endless loop in case censoring.
+        i += 1
+        if i >= age_max:
+            return x
+
         state = next_state(age, state)
 
-        # To avoid endless loop.
-        i += 1
-        if i > age_max:
-            raise RuntimeError('Endless loop. Check config!')
-
         # Update auxillary variable.
-        a = b 
+        period_start = period_end
 
     return x
 
 
-if __name__ == "__main__":
-    # TEMP: Development
-
-    # TARGET:
-    # [1. 2. 3. 4.] [14899   815   188    17] [0.93592562 0.05119668 0.01180979 0.00106791]
-
-    # TODO: 
-    # * Sample HMM censoring times from a beta-binomial with alpha = 4.57; beta = 5.47
-    # * Sample time for first screening analytically by fitting a distribution to empirical data.
-    # * Update inital state probas and transit intensities. 
-
-    n_timepoints = 100
-
-    # Number of screening histories/females/samples.
-    n_samples = 200
-
-    np.random.seed(42)
+def simulate_screening_histories(t_start, t_cens, n_timepoints):
 
     D = []
-    for num in range(n_samples):
+    for t_a, t_b in tqdm(zip(t_start, t_cens)):
 
-        # Simulate a synth screening profile.
-        d = simulate_profile(n_timepoints)
+        d = simulate_profile(t_a, t_b, n_timepoints)
         
         if sum(d) == 0:
             continue
 
         D.append(d)
 
-    D = np.array(D)
-    
+    return np.array(D)
+
+
+if __name__ == "__main__":
+    # Demo run.
+
+    np.random.seed(42)
+
+    n_samples = 120
+    n_timepoints = 340
+
+    t_start, t_cens = sample_init_censoring_times(n_samples)
+
+    D = simulate_screening_histories(t_start, t_cens, n_timepoints)
+
+    # Inspect
     v, c = np.unique(D[D != 0], return_counts=True)
     print(v, c, c / sum(c))
 
-    # import matplotlib.pyplot as plt 
-    # plt.figure()
-    # plt.imshow(D, aspect="auto")
-    # plt.show()
+    np.save("/Users/sela/Desktop/hmm.npy", D)
+    D = np.load("/Users/sela/Desktop/hmm.npy")
 
-    # idx = np.squeeze(np.where(np.max(D, axis=1) > 1))
-    # _, axes = plt.subplots(nrows=6, ncols=2, figsize=(15, 15))
-    # for i, axis in enumerate(axes.ravel()):
+    import matplotlib.pyplot as plt 
+    plt.figure()
+    plt.imshow(D, aspect="auto")
+    plt.show()
 
-    #     x = D[idx[i], :]
-    #     x[x == 0] = np.nan
-    #     axis.plot(x, "o")
-    # plt.show()
+    idx = np.squeeze(np.where(np.max(D, axis=1) > 1))
+    _, axes = plt.subplots(nrows=6, ncols=2, figsize=(15, 15))
+    for i, axis in enumerate(axes.ravel()):
+
+        x = D[idx[i], :]
+        x[x == 0] = np.nan
+        axis.plot(x, "o")
+    plt.show()

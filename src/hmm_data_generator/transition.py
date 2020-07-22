@@ -1,8 +1,3 @@
-"""
-"""
-
-from typing import List, Union
-
 import numpy as np
 
 from utils import age_group_idx, lambda_sr, p_init_state
@@ -14,7 +9,6 @@ def inital_state(init_age: int) -> int:
     return np.random.choice([1, 2, 3, 4], p=p_init_state[age_group_idx(init_age)])       
 
 
-# QUESTION: How is treatment given by transition intensities???
 def legal_transitions(current_state: int, age_group_idx: int) -> np.ndarray:
     """Filter intensities for shifts from the current state."""
 
