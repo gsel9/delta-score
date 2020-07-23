@@ -15,10 +15,6 @@ def legal_transitions(current_state: int, age_group_idx: int) -> np.ndarray:
     # Transition intensities for the given age group.
     lambdas = lambda_sr[age_group_idx]
     
-    # Censoring.
-    if current_state == 0:
-        return np.asarray([0])
-
     # N0 -> L1/D4.
     if current_state == 1:
         return np.array([lambdas[0], lambdas[5]])
@@ -41,10 +37,11 @@ def legal_transitions(current_state: int, age_group_idx: int) -> np.ndarray:
 def next_state(age_exit: int, current_state: int, censoring: int = 0) -> int:
     """Returns next female state."""
 
-    lambdas = legal_transitions(current_state, age_group_idx(age_exit))
-
-    if len(lambdas) == 1:
+    # NB: Truncates each history at cancer diagnosis.
+    if current_state == 4:
         return censoring
+
+    lambdas = legal_transitions(current_state, age_group_idx(age_exit))
 
     # N0 -> L1/D4 (censoring)
     if current_state == 1:
@@ -57,9 +54,6 @@ def next_state(age_exit: int, current_state: int, censoring: int = 0) -> int:
     # H2 -> L1/C3/D4
     if current_state == 3:
         return np.random.choice((2, 4, censoring), p=lambdas / sum(lambdas))
-
-    if current_state == censoring:
-        return censoring
     
     raise ValueError(f"Invalid current state: {current_state}")
 

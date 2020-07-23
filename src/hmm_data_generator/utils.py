@@ -2,15 +2,19 @@ import numpy as np
 
 
 age_partitions = np.array([
-    (0, 20),  
+    (16, 20),  
     (20, 25),
     (25, 30),
     (30, 35), 
     (35, 40), 
     (40, 50), 
     (50, 60), 
-    (60, 200)
+    (60, 96)
 ])
+
+# TEMP: Map age, age_max -> t_start, t_cens.
+# NB: Should be <int>.
+age_partitions = ((age_partitions - 16) / 80 * 321).astype(int)
 
 
 # Initial state probabilities (age group x probability initial state).

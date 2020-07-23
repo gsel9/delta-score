@@ -145,7 +145,7 @@ def make_pdf(dist, params, size=10000):
 	#np.linspace(start, end, size)
 
 	# Build PDF
-	x = np.arange(340) 
+	x = np.arange(321) 
 	y = dist.pdf(x, loc=loc, scale=scale, *arg)
 	
 	return x, y
@@ -205,7 +205,7 @@ def eval_censoring_distribution():
 	# v, c = np.unique(y, return_counts=True)
 	# plt.bar(v, c / sum(c), alpha=0.7)
 	
-	# y = st.exponweib.pdf(x=np.arange(0, 340), 
+	# y = st.exponweib.pdf(x=np.arange(0, 321), 
 	# 					 a=513.28, c=4.02, loc=-992.87, scale=707.63)
 	# plt.plot(y)
 	# plt.show()
@@ -224,13 +224,13 @@ def eval_init_screening_distribution():
 	v, c = np.unique(y, return_counts=True)
 	plt.bar(v, c / sum(c), alpha=0.7)
 	
-	y = st.exponnorm.pdf(x=np.arange(0, 340), K=8.76, loc=9.80, scale=7.07)
+	y = st.exponnorm.pdf(x=np.arange(0, 321), K=8.76, loc=9.80, scale=7.07)
 	plt.plot(y)
 	plt.show()
 
 
 if __name__ == "__main__":
-	#select_init_screening_distribution()
-	eval_init_screening_distribution()
-	#select_censoring_distribution()
+	select_init_screening_distribution()
+	#eval_init_screening_distribution()
+	select_censoring_distribution()
 	#eval_censoring_distribution()

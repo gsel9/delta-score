@@ -3,7 +3,7 @@
 
 import numpy as np 
 
-from utils import lambda_sr, age_partitions, age_group_idx
+from utils import age_partitions, age_group_idx
 from transition import legal_transitions
 
 
@@ -41,125 +41,72 @@ def kappa_m(age, current_state, m) -> float:
     return -1.0 * s_km
 
 
-def kappa(age, current_state, t, m) -> float:
+def kappa(age, current_state, t, i) -> float:
 
-    if m == 0:
+    if i == 0:
         return kappa_0(age, current_state, t)
     
-    if m == 1:
+    if i == 1:
         return kappa_1(age, current_state, t)
     
-    return kappa_m(age, current_state, m)
+    return kappa_m(age, current_state, i)
 
 
-def sojourn_time_cdf(age, age_max, s) -> np.ndarray:
-    """Compute the sojourn time CDF for a given female.
-    
-    Args:
-        age: Start age.
-        age_max: End of time scale.
-        s: Current state.
-    
-    Returns:
-        Sojourn time CDF over [age, age_max].
-    """
+def eval_cdf(age, t, k, s):
 
-    k = age_group_idx(age)
-    time_lapse = int(age_max - age) + 1
-    
-    cdf = np.zeros(time_lapse + 1)
-    cdf[-1] = 1
+    n = age_group_idx(age + t) - k + 1
 
-    for t in range(1, time_lapse):
-
-        # NOTE: Adjust to Python count logic (range() terminates at n - 1).
-        n = age_group_idx(age + t) - k + 1
-
-        cdf[t] = 1.0 - np.exp(sum([kappa(age, s, t, i) for i in range(n)]))
-
-    return np.array(cdf)
+    return 1.0 - np.exp(sum([kappa(age, s, t, i) for i in range(n)]))
 
 
-def sojourn_time(age: int, age_max: int, s: int) -> float:
-    """Estimate the time that will spent in a given state.
-    Args:
-        age: 
-        age_max:  
-        s: Current age.
+def sojourn_time(u, k, age, age_max, s) -> np.ndarray:
+    # NOTE: Time is considered relative to age. 
         
-    Returns:
-        The amount of time a female spends in the current state.
-    """
-    
-    # Female is censored.
-    if s == 0:
-        return age_max
+    t = 1
+    t_max = age_max - age
+
+    cdf = eval_cdf(age, t, k, s)
+
+    while cdf <= u:
+
+        t += 1
+
+        # NOTE: t, t_max should be <int>.
+        if t >= t_max:
+            return t_max - 1
+
+        cdf = eval_cdf(age, t, k, s)
+
+    return t
+
+
+def time_exit_state(age: int, age_max: int, s: int) -> float:
+    """Returns the amount of time a female spends in the current state."""
 
     # Need t > 0.
-    if age_max - age < 1:
+    if age_max - age < 2:
         return age_max
 
     # Corollary 1: step 1
-    u = np.random.uniform()
+    u = np.random.uniform(low=1e-9, high=1 - 1e-6)
 
     # Step 2
     k = age_group_idx(age)
 
-    # Step 3: 
-    cdf = sojourn_time_cdf(age, age_max, s)
+    # Step 3
+    # i) Seek t: P(T < t) approx u where t is relative to age.
+    t = sojourn_time(u, k, age, age_max, s)
 
-    # Solve t: P(T < t) approx u where t is relative to age.
-    t = np.argmax(u < cdf)
-
-    # Exceeds CDF domain.
-    if t == 0:
-        t = age_max
-
-    # Seek l: P(T < tau_l - a) < u < P(T < tau_lp - a).
+    # ii) Seek l: P(T < tau_l - a) < u < P(T < tau_lp - a).
     # If t: P(T < t) approx u => t in [tau_l - a, tau_lp - a) <=> t + a in [tau_l, tau_lp).
     l = age_group_idx(t + age)
+
     tau_l, tau_lp = age_partitions[l] 
 
-    # import matplotlib.pyplot as plt 
-    # plt.figure()
-    # plt.plot(cdf)
-    # plt.axhline(y=u, label="u", c="green")
-    # plt.axvline(x=t, label=f"t: {t}", c="yellow")
-    # plt.axvline(x=tau_l - age, label=f"tau_l - a: {tau_l - age}", c="maroon")
-    # plt.axvline(x=tau_lp - age, label=f"tau_lp - a: {tau_lp - age}", c="maroon")
-    
-    # plt.legend()
-    # plt.show()
-
-    # # Sanity check.
+    # Sanity check.
     assert tau_l - age <= t and t < tau_lp - age
 
     # Step 4
-    n = age_group_idx(tau_l - age) - k + 1
+    sum_kappa = sum([kappa(age, s, tau_l - age, i) for i in range(1, l - k + 1)])
 
-    sum_kappa = sum([kappa(age, s, tau_l - age, i) for i in range(1, n)])
-
-    return (sum_kappa - np.log(1 - u)) / sum(legal_transitions(s, l))
-
-
-if __name__ == '__main__':
-    """
-    import matplotlib.pyplot as plt
-
-    cdf1 = sojourn_time_cdf(16, 96, 2)
-    cdf2 = sojourn_time_cdf(50, 96, 2)
-
-    print(cdf1)
-    print(cdf2)
-
-    _, axes = plt.subplots(ncols=2, figsize=(15, 5))
-    axes[0].plot(cdf1)
-    axes[1].plot(cdf2)
-    plt.show()
-    """
-
-    # Should be shorter for higher current states.
-    print(sojourn_time(20, 70, 1))
-    print(sojourn_time(20, 70, 2))
-    print(sojourn_time(20, 70, 3))
-    print(sojourn_time(20, 70, 4))
+    return (sum_kappa - np.log(1 - u)) / sum(legal_transitions(s, l)) + age
