@@ -84,7 +84,7 @@ def time_exit_state(age: int, age_max: int, s: int) -> float:
     """Returns the amount of time a female spends in the current state."""
 
     # Need t > 0.
-    if age_max - age < 2:
+    if age_max - age < 1:
         return age_max
 
     # Corollary 1: step 1
@@ -98,7 +98,7 @@ def time_exit_state(age: int, age_max: int, s: int) -> float:
     t = sojourn_time(u, k, age, age_max, s)
 
     # ii) Seek l: P(T < tau_l - a) < u < P(T < tau_lp - a).
-    # If t: P(T < t) approx u => t in [tau_l - a, tau_lp - a) <=> t + a in [tau_l, tau_lp).
+    #     If t: P(T < t) approx u => t in [tau_l - a, tau_lp - a) <=> t + a in [tau_l, tau_lp).
     l = age_group_idx(t + age)
 
     tau_l, tau_lp = age_partitions[l] 

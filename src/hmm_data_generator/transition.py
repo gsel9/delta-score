@@ -56,7 +56,3 @@ def next_state(age_exit: int, current_state: int, censoring: int = 0) -> int:
         return np.random.choice((2, 4, censoring), p=lambdas / sum(lambdas))
     
     raise ValueError(f"Invalid current state: {current_state}")
-
-
-if __name__ == '__main__':
-    print(next_state(16, 2))
