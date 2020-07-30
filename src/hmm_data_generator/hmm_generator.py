@@ -49,12 +49,11 @@ def simulate_profile(age, age_max, n_timepoints, censoring=0) -> np.ndarray:
     while age < age_max:
 
         # Age at exit time from current state.
-        t_exit = int(round(time_exit_state(age, age_max, state)))
+        age = int(round(time_exit_state(age, age_max, state)))
 
-        if t_exit >= age_max:
-        	t_exit = age_max
-
-        age = t_exit
+        # Clip to censoring time.
+        if age > age_max:
+        	age = age_max
 
         # Update state vector.
         x[period_start:age] = state
@@ -71,7 +70,7 @@ def simulate_profile(age, age_max, n_timepoints, censoring=0) -> np.ndarray:
     return x
 
 
-# NB: Expect n_timepoints = 321 in utils.py.
+# NB: Expects n_timepoints = 321 in utils.py.
 def simulate_screening_histories(n_samples, n_timepoints=321):
 
     t_start, t_cens = times_first_screen_censoring(n_samples, n_timepoints=n_timepoints)
@@ -94,7 +93,7 @@ if __name__ == "__main__":
     # Demo run.
     np.random.seed(42)
 
-    D = simulate_screening_histories(n_samples=1200)
+    D = simulate_screening_histories(n_samples=5000)
     print(D)
 
     # Analyse histories.
@@ -116,17 +115,17 @@ if __name__ == "__main__":
     #t_end = np.argmax(np.cumsum(D, axis=1), axis=1)
     #idx = np.squeeze(np.where(D[range(D.shape[0]), t_end] > 2))
     
-    _, axes = plt.subplots(nrows=5, ncols=2, figsize=(15, 15))
-    for i, axis in enumerate(axes.ravel()):
+ #    _, axes = plt.subplots(nrows=5, ncols=2, figsize=(15, 15))
+ #    for i, axis in enumerate(axes.ravel()):
 
-        x = D[idx[i], :]
-        x[x == 0] = np.nan
-        axis.plot(x, "o")
-        #axis.set_xlim(0, 321)
+ #        x = D[idx[i], :]
+ #        x[x == 0] = np.nan
+ #        axis.plot(x, "o")
+ #        #axis.set_xlim(0, 321)
 
-        #y = np.ones(321) * np.nan
-        #y[x != 0] = x[x != 0]
-        #axis.plot(y, "o")
+ #        #y = np.ones(321) * np.nan
+ #        #y[x != 0] = x[x != 0]
+ #        #axis.plot(y, "o")
 
-    plt.show()
- 
+ #    plt.show()
+ # 
