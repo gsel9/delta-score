@@ -1,6 +1,7 @@
 from collections import Counter
 
 import numpy as np 
+import matplotlib.pyplot as plt
 
 
 def comparison_data():
@@ -36,28 +37,62 @@ def transition_rates(X):
 
 	x = X[X != 0]
 
-	d = dict(Counter(zip(x[:-1], x[1:])))
-
 	counts = np.zeros((4, 4), dtype=float)
-	for (a, b), count in d.items():
-		counts[int(a) - 1, int(b) - 1] = count
+	for x in X:
+
+		x = x[x != 0]
+
+		d = dict(Counter(zip(x[:-1], x[1:])))
+
+		for (a, b), count in d.items():
+			counts[int(a) - 1, int(b) - 1] += count
 
 	print("TRANSITION RATES:")
 	print(counts / np.sum(counts) * 100, "\n")
 
 
+def dist_per_timepoint(X, p_fig=None, c=["C0", "C1", "C2", "C3"]):
+
+	stats = np.zeros((X.shape[1], 4))
+	for j in range(X.shape[1]):
+
+		x = X[:, j]
+		v, c = np.unique(x[x != 0], return_counts=True)
+
+		for n, m in zip(v, c):
+			stats[j, int(n - 1)] = m
+
+
+	plt.figure()
+	for i in range(stats.shape[1]):
+		plt.plot(stats[:, i], label=f"{i+1}")
+		plt.axvline(x=np.argmax(stats[:, i]), c=c[i])
+
+	plt.legend()
+
+	if p_fig is not None:
+		plt.savefig(p_fig)
+
+	plt.show()
+
+
 def main():
+	# TODO: 
+	# * Compare dist per timepoint to expectations (HMM paper)
+	# * Make table comparing transition rates in HMM and real data.
 
 	X = np.load("/Users/sela/Desktop/hmm.npy")
 
-	distribution(X)
-	transition_rates(X)
+	#distribution(X)
+	#transition_rates(X)
+	#dist_per_timepoint(X)
 
 	# For comparison.
 	X = np.load("/Users/sela/Desktop/Xprep.npy")
 
-	distribution(X)
-	transition_rates(X)
+	#distribution(X)
+	#transition_rates(X)
+	dist_per_timepoint(X)
 
 
 if __name__ == "__main__":

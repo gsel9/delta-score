@@ -88,7 +88,7 @@ def time_exit_state(age: int, age_max: int, s: int) -> float:
         return age_max
 
     # Corollary 1: step 1
-    u = np.random.uniform(low=1e-9, high=1 - 1e-6)
+    u = np.random.uniform()
 
     # Step 2
     k = age_group_idx(age)
