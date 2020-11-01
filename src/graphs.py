@@ -36,7 +36,7 @@ def column_graph(num_nodes, weights=[1]):
 	return A
 
 
-if __name __ == "__main__":
+if __name__ == "__main__":
 	from sklearn.metrics.pairwise import cosine_distances
 
 	# Distance matrix from sparse data matrix.
