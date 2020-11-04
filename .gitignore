@@ -127,3 +127,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Sanketh: ignore DMF results directory
+src/dmf/results/*
+
