@@ -13,6 +13,7 @@ tqdm = "*"
 pandas = "*"
 sklearn = "*"
 jupyter = "*"
+torch = "*"
 
 [requires]
 python_version = "3.8"
