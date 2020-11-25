@@ -1,3 +1,5 @@
+from time import time 
+
 import numpy as np 
 
 from utils import intial_adjacency
@@ -19,8 +21,15 @@ def interpolation_region_mask(Y):
 
 def synthetic_data_gen():
     
-    M = np.load("../data/M_train.npy")
-    Y = np.load("../data/X_train.npy")
+    #M = np.load("../../data/graph_learning/M.npy")
+    #Y = np.load("../../data/graph_learning/Y.npy")
+    #Z = np.load("../../data/graph_learning/Z.npy")
+    #A = np.load("../../data/graph_learning/A.npy")
+        
+    M = np.load("../../data/M_train.npy")
+    Y = np.load("../../data/X_train.npy")
+    #Z = np.load("../data/graph_learning/Z.npy")
+    #A = np.load("../data/graph_learning/A.npy")
     
     O = interpolation_region_mask(Y)
 
@@ -39,18 +48,22 @@ def screening_data_gen():
 def main():
 
 	# Choose between synthetic and screening data for demonstration run.
-	#M = synthetic_data_gen()
-	M = screening_data_gen()
+	M = synthetic_data_gen()
+	#M = screening_data_gen()
 
-	n = 6
-	A_init = intial_adjacency(n=n, p=0.4, seed=42)
-	print(A_init)
-	print()
+	M = M[:20]
+
+	# Initialize random graph.
+	A_init = intial_adjacency(n=M.shape[0], p=0.1, seed=42)
 
 	# Increase n_active to increase density in A. 
 	# Increase eps to decrease density in A. 
-	A_hat = estimate_adjacency(A_init, M[:n], num_epochs=10, N=3, eps=0.5)
+	t0 = time()
+	A_hat, M_hat, E, L = estimate_adjacency(A_init, M, method="cf", num_epochs=100, n=5, k=5, alpha=0.3)
+	print(E)
+	print(L)
 	#np.save("A_hat.npy", A_hat)
+	print("Duration:", time() - t0)
 	print(A_hat)
 
 	np.array_equal(A_init, A_hat), np.sum(A_init), np.sum(A_hat)

@@ -3,7 +3,10 @@ import numpy as np
 from scipy import signal 
 from sklearn.linear_model import LinearRegression 
 
-from utils import check_iterable 
+try:
+    from .utils import check_iterable
+except: 
+    from utils import check_iterable 
 
 import numba 
 
@@ -27,7 +30,7 @@ def shift(x, k, fill_value=0):
     return x_shifted
 
 
-def cross_correlation(i, N_i, M, eps=0.5):
+def cross_correlation(i, N_i, M):
     """
     Args:
         i: Index of node i.
@@ -48,15 +51,15 @@ def cross_correlation(i, N_i, M, eps=0.5):
     for k, m_j in enumerate(M[N_i]):
 
         c = signal.correlate(m_j, M[i])
-        c_max = max(c) / sum(c != 0)
+        c_max = np.max(c) / sum(c != 0)
 
         # Retain only the neighbours sufficiently correlated.
-        if c_max >= eps:
-                   
-            tau_i_star.append(np.argmax(c) + 1 - len(m_j))
+        #if c_max >= eps:
+
+        tau_i_star.append(np.argmax(c) + 1 - len(m_j))
             
-            N_i_star.append(N_i[k])
-            C_i_star.append(c_max)
+        N_i_star.append(N_i[k])
+        C_i_star.append(c_max)
 
     return tau_i_star, N_i_star, C_i_star
 
@@ -80,3 +83,24 @@ def synthesize(i, m_i, N_i):
     #beta = np.linalg.inv(N_i @ N_i.T) @ N_i @ m_i
     
     #return N_i.T @ beta
+
+
+if __name__ == "__main__":
+
+    from utils import interpolation_region_mask
+
+    Y = np.load("../../data/graph_learning/Y.npy")
+    Z = np.load("../../data/graph_learning/Z.npy")
+    O = interpolation_region_mask(Y)
+    M = Z * O 
+    
+    np.random.seed(42)    
+    for i in range(12):
+
+        N_i = np.asarray(np.random.choice(range(M.shape[0]), size=10, replace=False))
+    
+        # Find optimal alignment of elegible neighbours.
+        tau_i_star, N_i_star, C_i_star = cross_correlation(i=i, N_i=N_i, M=M, eps=0.5)
+    
+        aligned_neighbours = align(M[N_i_star], tau_i_star)
+

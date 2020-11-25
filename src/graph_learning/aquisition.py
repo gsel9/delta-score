@@ -2,6 +2,11 @@ import numpy as np
 
 from sklearn.metrics import jaccard_score
 
+try:
+    from .utils import check_adjacency, check_iterable
+except:
+    from utils import check_adjacency, check_iterable
+
 
 # See also: https://stackoverflow.com/questions/49733244/how-can-i-calculate-neighborhood-overlap-in-weighted-network
 def neighbourhood_similarity(N_i, N_j):
@@ -9,84 +14,114 @@ def neighbourhood_similarity(N_i, N_j):
     return jaccard_score(N_i != 0, N_j != 0)
 
 
-def candidate_adjacency(A, loss, n_active, rnd_state, update_j=False):
-    """
-    Args:
-        A: Current adjacency matrix.
-        n_active: Number of neighbourhoods to update.
-        n_candidates: Number of neighbourhoods to compare in an update.
-        update_j: Update neighbourhoods of both i and j.
-    """
-    
-    active = rnd_state.choice(range(A.shape[0]), replace=False, 
-                              size=min(A.shape[0], n_active), p=loss / sum(loss))
-    A_new = A.copy()    
+def random_candidate_adjacency(A, loss, n, k, rnd_state):
 
+    # Prioretize nodes with largest loss.
+    active = rnd_state.choice(np.arange(A.shape[0]), replace=False, 
+                              size=min(A.shape[0], n), p=loss / sum(loss))
+
+    # Record the nodes that have changes to their neighbourhoods.
+    updated = []
+
+    A_new = A.copy()
     for i in active:
 
-        # Node is not connected.
-        if sum(A[i]) < 1:
-            A_new = random_update(A, A_new, i, rnd_state)
+        # Kill signal from previous neighbours.
+        A_new[i, :] = 0
+        A_new[:, i] = 0
+
+        A_new = random_neighbours(A_new, i, k, rnd_state)
             
-        else:
-            A_new = cf_update(A, A_new, i, n_active, rnd_state)
+    return check_adjacency(A_new)
 
-    # Just in case.
-    np.fill_diagonal(A_new, 0)
+def random_neighbours(A_new, i, k, rnd_state):
+    """Assign `k` random neighbours to node i."""
 
-    # Sanity check.
-    assert np.array_equal(A_new, A_new.T)
-                
+    candidates = np.concatenate([np.arange(i), np.arange(i + 1, A_new.shape[0])])
+    N_new = rnd_state.choice(candidates, replace=False, size=k)
+    
+    A_new[i, N_new] = 1
+    A_new[N_new, i] = 1
+
     return A_new
 
 
-def cf_update(A, A_new, i, n_active, rnd_state):
+def candidate_adjacency(method, A, loss, C, n, k, rnd_state, update_j=False):
+
+    if method == "random":
+        return random_candidate_adjacency(A, loss, n, k, rnd_state)
+
+    if method == "cf":
+        return cf_candidate_adjacency(A, loss, n, k, C, rnd_state)
+
+    raise ValueError(f"Invalid method {method}")
+
+
+def cf_candidate_adjacency(A, loss, n, k, C, rnd_state):
     
-    # Ensure i not in N_j.
+    # Prioretize nodes with largest loss.
+    active = rnd_state.choice(np.arange(A.shape[0]), replace=False, 
+                              size=min(A.shape[0], k), p=loss / sum(loss))
+
+    A_new = A.copy()
+    for i in active:
+
+        # Node is not connected to any neighbours.
+        if sum(A[i]) < 1:
+            A_new = random_neighbours(A_new, i, k, rnd_state)
+            
+        else:
+            A_new = cf_neighbours(A, A_new, C, i, k, rnd_state)
+                        
+    return check_adjacency(A_new)
+
+
+def cf_neighbours(A, A_new, C, i, k, rnd_state):
+
+    # Sample neighbours to compare with. Ensure i not in N_j.
+    # Do random sampling to include some new candidates in each round.
     candidates = np.concatenate([np.arange(i), np.arange(i + 1, A.shape[0])])
-    candidates = rnd_state.choice(candidates, replace=False, size=n_active)
+    candidates = rnd_state.choice(candidates, replace=False, size=k)
+
+    compare_to_i = lambda A_j: neighbourhood_similarity(A[i], A_j)
+    overlaps = np.apply_along_axis(compare_to_i, 1, A[candidates])
     
-    new_hood = None
-    max_overlap = 0
+    new_hood = candidates[np.argmax(overlaps)]
+    max_overlap = max(overlaps)
 
-    for j in candidates:
+    if np.isclose(max_overlap, 0):
 
-        overlap = neighbourhood_similarity(A[i], A[j])
-        if overlap > max_overlap:
+        return random_neighbours(A_new, i, k, rnd_state)
 
-            new_hood = j
-            max_overlap = overlap
+    if np.isclose(max_overlap, 1):
 
-    return update_neighbourhood(max_overlap, A_new, A, i, j, update_j=False)
+        A_new[i, new_hood] = 1
+        A_new[new_hood, i] = 1
 
+        return A_new
 
-def random_update(A, A_new, i, rnd_state):
-    
-    candidates = np.concatenate([np.arange(i), np.arange(i + 1, A.shape[0])])
-    candidates = np.asarray([rnd_state.choice(candidates)])
-        
-    return update_neighbourhood(overlap=0, A_new=A_new, A=A, i=i, j=candidates, update_j=False)
+    return cf_update_neighbourhood(max_overlap, A_new, A, i, new_hood, C, rnd_state)
 
 
-def update_neighbourhood(overlap, A_new, A, i, j, update_j=False):
+def cf_update_neighbourhood(overlap, A_new, A, i, j, C, rnd_state):
+    # Replacing the least correlated neighs of i with the new neighs of j.
 
-    # Connect i and j.
-    if overlap == 1:
+    N_i = check_iterable(np.squeeze(np.where(A[i])))
 
-        A_new[i, j] = 1
-        A_new[j, i] = 1
+    # Find the neighbours of j that are not common to i.
+    candidates = np.setdiff1d(np.where(A[j]), N_i)
 
-    else:
+    # Rank neighbours by correlation to i.
+    to_replace = N_i[np.argsort(C[i])][:len(candidates)]
 
-        # Union of both neighbourhoods.
-        N_new = np.squeeze(np.logical_or(A[i], A[j]))
+    # Replace the least correlated neighbours of i.
+    A_new[to_replace, i] = 0
+    A_new[i, to_replace] = 0
 
-        A_new[i, N_new] = 1
-        A_new[N_new, i] = 1
-        
-        if update_j:
-        
-            A_new[j, N_new] = 1
-            A_new[N_new, j] = 1
+    A_new[candidates, i] = 1
+    A_new[i, candidates] = 1
+
+    # Force diagonal since i could be in `candidates`.
+    np.fill_diagonal(A_new, 0)
 
     return A_new
