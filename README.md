@@ -1,8 +1,3 @@
-# The Delta score -- Measuring the confidence and correctness in probability estimates 
+# The Delta score: Measuring the performance of probabilistic algorithms
 
-TODO:
-* binary and multiclass scores? or just multiclass?
-* sample coverage 
-* delta score plot with featuers to turn on and off 
-* ipynb tutorial
-* link to pht paper and medium article(s)
+Code for the Medium article: [The Delta score: measuring the performance of probabilistic estimates](https://medium.com/@langberg91/the-delta-score-measuring-the-performance-of-probabilistic-estimates-4c035953c29)
