@@ -11,5 +11,5 @@ Code for the Medium article: [The Delta score: measuring the performance of prob
 From setup directory
 
 ```bash
-python -m install .
+python -m pip install .
 ```
